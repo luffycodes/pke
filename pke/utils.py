@@ -2,20 +2,22 @@
 
 """ Useful functions for the pke module. """
 
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
 
+import codecs
 import csv
 import glob
 import gzip
-import codecs
 import logging
 from collections import defaultdict
 
-from .base import LoadFile
-# from .supervised import Kea
-
 from nltk.stem.snowball import SnowballStemmer as Stemmer
+
+from .base import LoadFile
+
+
+# from .supervised import Kea
 
 
 def load_document_frequency_file(input_file,
@@ -39,8 +41,7 @@ def load_document_frequency_file(input_file,
 
     # open the input file
     with gzip.open(input_file, 'r') if input_file.endswith('.gz') else \
-         codecs.open(input_file, 'r') as f:
-
+            codecs.open(input_file, 'r') as f:
         # read the csv file
         df_reader = csv.reader(f, delimiter=delimiter)
 
@@ -89,7 +90,7 @@ def compute_document_frequency(input_dir,
     nb_documents = 0
 
     # loop throught the documents
-    for input_file in glob.glob(input_dir+'/*.'+extension):
+    for input_file in glob.glob(input_dir + '/*.' + extension):
 
         # initialize load file object
         doc = LoadFile(input_file)
@@ -116,12 +117,11 @@ def compute_document_frequency(input_dir,
     with gzip.open(output_file, 'w') as f:
 
         # add the number of documents as special token
-        f.write('--NB_DOC--'+delimiter+str(nb_documents)+'\n')
+        f.write('--NB_DOC--' + delimiter + str(nb_documents) + '\n')
 
         for ngram in frequencies:
             f.write((ngram).encode('utf-8') + delimiter +
                     str(len(frequencies[ngram])) + '\n')
-
 
 
 def train_supervised_model(input_dir,
@@ -159,7 +159,7 @@ def train_supervised_model(input_dir,
                 reference file, defaults to ','.
     """
 
-    logging.info('building model '+str(model)+' from '+input_dir)
+    logging.info('building model ' + str(model) + ' from ' + input_dir)
 
     references = load_references(reference_file,
                                  sep_doc_id=sep_doc_id,
@@ -168,12 +168,12 @@ def train_supervised_model(input_dir,
                                  stemmer=stemmer)
     training_instances = []
     training_classes = []
-    files = glob.glob(input_dir+'/*.'+extension)
+    files = glob.glob(input_dir + '/*.' + extension)
 
     # get the input files from the input directory
     for input_file in files:
 
-        logging.info('reading file '+input_file)
+        logging.info('reading file ' + input_file)
 
         # initialize the input file
         model.__init__(input_file=input_file, language=language)
@@ -199,7 +199,7 @@ def train_supervised_model(input_dir,
                 training_classes.append(0)
             training_instances.append(model.instances[candidate])
 
-    logging.info('writing model to '+model_file)
+    logging.info('writing model to ' + model_file)
     model.train(training_instances=training_instances,
                 training_classes=training_classes,
                 model_file=model_file)
@@ -212,7 +212,7 @@ def load_references(input_file,
                     stemmer='porter'):
     """ Load a reference file and returns a dictionary. """
 
-    logging.info('loading reference keyphrases from '+input_file)
+    logging.info('loading reference keyphrases from ' + input_file)
 
     references = defaultdict(list)
 

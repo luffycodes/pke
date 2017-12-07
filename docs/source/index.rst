@@ -9,16 +9,16 @@ ships with supervised models trained on the `SemEval-2010 dataset
 <http://aclweb.org/anthology/S10-1004.pdf>`_.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Installation
+:maxdepth: 2
+       :caption: Installation
 
-   install
+       install
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Base Classes
+:maxdepth: 2
+       :caption: Base Classes
 
-   classes
+       classes
 
 
 Indices and tables

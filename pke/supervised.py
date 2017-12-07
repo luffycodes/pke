@@ -2,26 +2,25 @@
 
 """ Supervised keyphrase extraction models. """
 
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
 
-import os
-import re
 import math
+import os
+import pickle
+import re
 import string
+
+import numpy as np
+from nltk.corpus import stopwords
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.preprocessing import MinMaxScaler
 
 from .base import LoadFile
 from .utils import load_document_frequency_file
 
-import numpy as np
 
-from nltk.corpus import stopwords
-
-import pickle
-
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.ensemble import RandomForestClassifier
 # from sklearn.utils import shuffle
 # from sklearn.linear_model import LogisticRegression
 
@@ -39,7 +38,6 @@ class SupervisedLoadFile(LoadFile):
         self.instances = {}
         """ The instances container. """
 
-
     def feature_scaling(self):
         """ Scale features to [0,1]. """
 
@@ -49,11 +47,9 @@ class SupervisedLoadFile(LoadFile):
         for i, candidate in enumerate(candidates):
             self.instances[candidate] = X[i]
 
-
     def feature_extraction(self):
         """ Skeletton for feature extraction. """
         pass
-
 
     def classify_candidates(self, model=None):
         """ Classify the candidates as keyphrase or not keyphrase.
@@ -66,7 +62,7 @@ class SupervisedLoadFile(LoadFile):
         # set the default model if none provided
         if model is None:
             instance = self.__class__.__name__
-            model = os.path.join(self._models, instance+"-semeval2010.pickle")
+            model = os.path.join(self._models, instance + "-semeval2010.pickle")
 
         # load the model
         with open(model, 'rb') as f:
@@ -82,10 +78,9 @@ class SupervisedLoadFile(LoadFile):
         for i, candidate in enumerate(candidates):
             self.weights[candidate] = y[i][1]
 
-
     def candidate_weighting(self):
         """ Extract features and classify candidates with default parameters."""
-        
+
         self.feature_extraction()
         self.classify_candidates()
 
@@ -97,7 +92,6 @@ class Kea(SupervisedLoadFile):
         """ Redefining initializer for Kea. """
 
         super(Kea, self).__init__(input_file=input_file, language=language)
-
 
     def candidate_selection(self, stoplist=None):
         """ Select 1-3 grams as keyphrase candidates. Candidates that start or
@@ -128,7 +122,6 @@ class Kea(SupervisedLoadFile):
             words = [u.lower() for u in v.surface_forms[0]]
             if words[0] in stoplist or words[-1] in stoplist:
                 del self.candidates[k]
-
 
     def feature_extraction(self, df=None, training=False):
         """ Extract features (tf*idf, first occurrence and length) for each
@@ -167,11 +160,10 @@ class Kea(SupervisedLoadFile):
 
             # add the features to the instance container
             self.instances[k] = np.array([len(v.surface_forms) * idf,
-                                          v.offsets[0]/maximum_offset])
+                                          v.offsets[0] / maximum_offset])
 
         # scale features
         self.feature_scaling()
-
 
     @staticmethod
     def train(training_instances, training_classes, model_file):
@@ -192,12 +184,10 @@ class Kea(SupervisedLoadFile):
 class WINGNUS(SupervisedLoadFile):
     """ WINGNUS keyphrase extraction model. """
 
-
     def __init__(self, input_file=None, language='english'):
         """ Redefining initializer for WINGNUS. """
 
         super(WINGNUS, self).__init__(input_file=input_file, language=language)
-
 
     def candidate_selection(self,
                             NP='^((JJ|NN) ){,2}NN$',
@@ -217,8 +207,8 @@ class WINGNUS(SupervisedLoadFile):
 
         # filter candidates containing punctuation marks
         self.candidate_filtering(stoplist=list(string.punctuation) +
-                                 ['-lrb-', '-rrb-', '-lcb-', '-rcb-', '-lsb-',
-                                  '-rsb-'])
+                                          ['-lrb-', '-rrb-', '-lcb-', '-rcb-', '-lsb-',
+                                           '-rsb-'])
 
         # filter non-simplex noun phrases
         for k, v in self.candidates.items():
@@ -244,7 +234,6 @@ class WINGNUS(SupervisedLoadFile):
                                               in valid_surface_forms]
                 self.candidates[k].pos_patterns = [v.pos_patterns[i] for i
                                                    in valid_surface_forms]
-
 
     def feature_extraction(self, df=None, training=False, features_set=None):
         """ Extract features for each candidate.
@@ -300,8 +289,8 @@ class WINGNUS(SupervisedLoadFile):
             tf_of_substrings = 0
             stoplist = stopwords.words(self.language)
             for i in range(len(v.lexical_form)):
-                for j in range(i, min(len(v.lexical_form), i+3)):
-                    sub_words = v.lexical_form[i:j+1]
+                for j in range(i, min(len(v.lexical_form), i + 3)):
+                    sub_words = v.lexical_form[i:j + 1]
                     sub_string = ' '.join(sub_words)
 
                     # skip if substring is fullstring
@@ -320,7 +309,7 @@ class WINGNUS(SupervisedLoadFile):
                             is_included = False
                             for offset_2 in v.offsets:
                                 if offset_1 >= offset_2 and \
-                                   offset_1 <= offset_2 + len(v.lexical_form):
+                                        offset_1 <= offset_2 + len(v.lexical_form):
                                     is_included = True
                             if not is_included:
                                 tf_of_substrings += 1
@@ -328,10 +317,10 @@ class WINGNUS(SupervisedLoadFile):
             feature_array.append(tf_of_substrings)
 
             # [F4] -> relative first occurrence
-            feature_array.append(v.offsets[0]/maximum_offset)
+            feature_array.append(v.offsets[0] / maximum_offset)
 
             # [F5] -> relative last occurrence
-            feature_array.append(v.offsets[-1]/maximum_offset)
+            feature_array.append(v.offsets[-1] / maximum_offset)
 
             # [F6] -> length of phrases in words
             feature_array.append(len(v.lexical_form))
@@ -370,8 +359,8 @@ class WINGNUS(SupervisedLoadFile):
             feature_array.append('conclusions' in sections)
 
             # [F15] -> HeaderF
-            feature_array.append(types.count('sectionHeader')+
-                                 types.count('subsectionHeader')+
+            feature_array.append(types.count('sectionHeader') +
+                                 types.count('subsectionHeader') +
                                  types.count('subsubsectionHeader'))
 
             # [F11] -> abstractF
@@ -387,12 +376,11 @@ class WINGNUS(SupervisedLoadFile):
             feature_array.append(sections.count('conclusions'))
 
             # add the features to the instance container
-            self.instances[k] = np.array([feature_array[i-1] for i \
+            self.instances[k] = np.array([feature_array[i - 1] for i \
                                           in features_set])
 
         # scale features
         self.feature_scaling()
-
 
     @staticmethod
     def train(training_instances, training_classes, model_file):
@@ -418,7 +406,6 @@ class SEERLAB(SupervisedLoadFile):
 
         super(SEERLAB, self).__init__(input_file=input_file, language=language)
 
-
     def candidate_selection(self,
                             dblp_candidates=None,
                             mf_unigrams=30,
@@ -439,9 +426,9 @@ class SEERLAB(SupervisedLoadFile):
 
         # filter candidates containing stopwords or punctuation marks
         self.candidate_filtering(stoplist=stopwords.words(self.language) +
-                                 list(string.punctuation) +
-                                 ['-lrb-', '-rrb-', '-lcb-', '-rcb-', '-lsb-',
-                                  '-rsb-'])
+                                          list(string.punctuation) +
+                                          ['-lrb-', '-rrb-', '-lcb-', '-rcb-', '-lsb-',
+                                           '-rsb-'])
 
         # build the sets of unigrams, non-unigrams and acronyms
         unigrams = list()
@@ -469,12 +456,12 @@ class SEERLAB(SupervisedLoadFile):
 
         # add the most frequent unigrams
         valid_candidates.update(set([elem[0] for elem in \
-            sorted(unigrams, reverse=True)[:min(len(unigrams), mf_unigrams)]]))
+                                     sorted(unigrams, reverse=True)[:min(len(unigrams), mf_unigrams)]]))
 
         # add the most frequent non unigrams
         valid_candidates.update(set([elem[1] for elem in \
-            sorted(non_unigrams, reverse=True)[:min(len(non_unigrams),
-                                                    mf_non_unigrams)]]))
+                                     sorted(non_unigrams, reverse=True)[:min(len(non_unigrams),
+                                                                             mf_non_unigrams)]]))
 
         # filter candidates according the the most frequent sets
         for k, v in self.candidates.items():
@@ -489,7 +476,7 @@ class SEERLAB(SupervisedLoadFile):
             j = 0
 
             while j < sentence.length:
-                for k in range(min(j+skip, sentence.length+1), j, -1):
+                for k in range(min(j + skip, sentence.length + 1), j, -1):
 
                     surface_form = sentence.words[j:k]
                     norm_form = sentence.stems[j:k]
@@ -497,16 +484,14 @@ class SEERLAB(SupervisedLoadFile):
                     key = ' '.join(norm_form)
 
                     if key in dblp_candidates and key not in self.candidates:
-
                         self.candidates[key].surface_forms.append(surface_form)
                         self.candidates[key].lexical_form = norm_form
-                        self.candidates[key].offsets.append(shift+j)
+                        self.candidates[key].offsets.append(shift + j)
                         self.candidates[key].pos_patterns.append(pos_pattern)
 
-                        j = k -1
+                        j = k - 1
                         break
                 j += 1
-
 
     def feature_extraction(self, df=None, training=False):
         """ Extract features (tf*idf, first occurrence and length) for each
@@ -552,16 +537,14 @@ class SEERLAB(SupervisedLoadFile):
             # tf_title = len([u for u in v.offsets if u <= max_offset])
 
             # add the features to the instance container
-            self.instances[k] = np.array([len(v.lexical_form),               # N
-                                          is_acronym,                     # ACRO
-                                          len(v.surface_forms),         # TF_doc
-                                          candidate_df,                     # DF
-                                          len(v.surface_forms) * idf])   # TFIDF
-
+            self.instances[k] = np.array([len(v.lexical_form),  # N
+                                          is_acronym,  # ACRO
+                                          len(v.surface_forms),  # TF_doc
+                                          candidate_df,  # DF
+                                          len(v.surface_forms) * idf])  # TFIDF
 
         # scale features
         # self.feature_scaling()
-
 
     @staticmethod
     def train(training_instances, training_classes, model_file):
@@ -587,7 +570,6 @@ class SEERLAB(SupervisedLoadFile):
         #         positives.append(training_instances[i])
         #     else:
         #         negatives.append(training_instances[i])
-
 
         # np.random.shuffle(negatives)
 

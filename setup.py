@@ -9,12 +9,11 @@ setup(name='pke',
       packages=['pke'],
       url="https://github.com/boudinfl/pke",
       install_requires=[
-      	'nltk',
-      	'networkx',
-      	'numpy',
-      	'scipy',
-            'sklearn'
+          'nltk',
+          'networkx',
+          'numpy',
+          'scipy',
+          'sklearn'
       ],
       package_data={'pke': ['models/*.pickle', 'models/*.gz']}
-     )
-
+      )

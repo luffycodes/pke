@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
-import sys
-import codecs
 import argparse
+import codecs
 import logging
+import sys
 
 import pke
 
@@ -13,24 +12,24 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Keyphrase extraction script.')
 
-    parser.add_argument('-i', 
-                        '--input', 
-                        help='input file', 
+    parser.add_argument('-i',
+                        '--input',
+                        help='input file',
                         required=True)
 
-    parser.add_argument('-o', 
-                        '--output', 
+    parser.add_argument('-o',
+                        '--output',
                         help='output file',
                         required=True)
 
     parser.add_argument('-a',
-                        '--approach', 
-                        help='keyphrase extraction approach', 
+                        '--approach',
+                        help='keyphrase extraction approach',
                         required=True)
 
     parser.add_argument('-m',
-                        '--model', 
-                        help='Supervised model', 
+                        '--model',
+                        help='Supervised model',
                         default=None,
                         type=str)
 
@@ -40,7 +39,7 @@ if __name__ == "__main__":
                         required=True)
 
     parser.add_argument('-n',
-                        '--nbest', 
+                        '--nbest',
                         help='number of extracted keyphrases',
                         default=10,
                         type=int)
@@ -67,13 +66,13 @@ if __name__ == "__main__":
     class_ = getattr(pke, args.approach, None)
 
     if not class_:
-        logging.error('No valid extraction model given ['+args.approach+']')
+        logging.error('No valid extraction model given [' + args.approach + ']')
         sys.exit(0)
 
-    logging.info('keyphrase extraction using '+args.approach)
+    logging.info('keyphrase extraction using ' + args.approach)
 
     if args.df:
-        logging.info('loading df weights from '+args.df)
+        logging.info('loading df weights from ' + args.df)
         df = pke.load_document_frequency_file(args.df, delimiter="\t")
 
     extr = class_(input_file=args.input)
@@ -91,5 +90,4 @@ if __name__ == "__main__":
     keyphrases = extr.get_n_best(n=args.nbest)
 
     with codecs.open(args.output, 'w', 'utf-8') as f:
-        f.write(u'\n'.join([u+'\t'+str(v) for u, v in keyphrases]))
-            
+        f.write(u'\n'.join([u + '\t' + str(v) for u, v in keyphrases]))

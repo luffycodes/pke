@@ -2,28 +2,28 @@ Base classes
 ------------
 
 .. automodule:: pke.base
-   :members:
+:members:
 
 Unsupervised models
 -------------------
 
 .. automodule:: pke.unsupervised
-   :members:
+:members:
 
 Supervised models
 -----------------
 
 .. automodule:: pke.supervised
-   :members:
+:members:
 
 Reader classes
 --------------
 
 .. automodule:: pke.readers
-   :members:
+:members:
 
 Useful functions
 ----------------
 
 .. automodule:: pke.utils
-   :members:
+:members:

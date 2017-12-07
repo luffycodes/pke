@@ -2,25 +2,21 @@
 
 """ Unsupervised keyphrase extraction models. """
 
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
 
+import math
 import string
+from itertools import combinations
+
 import networkx as nx
 import numpy as np
-import math
+from nltk.corpus import stopwords
+from scipy.cluster.hierarchy import linkage, fcluster
+from scipy.spatial.distance import pdist
 
 from .base import LoadFile
 from .utils import load_document_frequency_file
-
-from itertools import combinations
-from collections import defaultdict
-
-from nltk.corpus import stopwords
-
-from scipy.cluster.hierarchy import linkage, fcluster
-from scipy.spatial.distance import pdist
-from sklearn.cluster import spectral_clustering
 
 
 class TfIdf(LoadFile):
@@ -45,10 +41,9 @@ class TfIdf(LoadFile):
 
         # filter candidates containing punctuation marks
         self.candidate_filtering(stoplist=list(string.punctuation) +
-                                 ['-lrb-', '-rrb-', '-lcb-', '-rcb-', '-lsb-',
-                                  '-rsb-'] +
-                                  stoplist)
-
+                                          ['-lrb-', '-rrb-', '-lcb-', '-rcb-', '-lsb-',
+                                           '-rsb-'] +
+                                          stoplist)
 
     def candidate_weighting(self, df=None):
         """ Candidate weighting function using document frequencies.
@@ -67,7 +62,6 @@ class TfIdf(LoadFile):
 
         # loop throught the candidates
         for k, v in self.candidates.items():
-
             # get candidate document frequency
             candidate_df = 1 + df.get(k, 0)
 
@@ -109,9 +103,9 @@ class KPMiner(LoadFile):
 
         # filter candidates containing stopwords or punctuation marks
         self.candidate_filtering(stoplist=list(string.punctuation) +
-                                 ['-lrb-', '-rrb-', '-lcb-', '-rcb-', '-lsb-',
-                                  '-rsb-'] +
-                                  stoplist)
+                                          ['-lrb-', '-rrb-', '-lcb-', '-rcb-', '-lsb-',
+                                           '-rsb-'] +
+                                          stoplist)
 
         # further filter candidates using lasf and cutoff
         for k, v in self.candidates.items():
@@ -123,7 +117,6 @@ class KPMiner(LoadFile):
             # delete if frequency is lower than lasf
             elif len(v.surface_forms) < lasf:
                 del self.candidates[k]
-
 
     def candidate_weighting(self, df=None, sigma=3.0, alpha=2.3):
         """ Candidate weight calculation as described in the KP-Miner paper.
@@ -158,7 +151,7 @@ class KPMiner(LoadFile):
         N_d = sum([len(v.surface_forms) for v in self.candidates.values()])
 
         # compute the boosting factor
-        B = min(N_d / (P_d*alpha), sigma)
+        B = min(N_d / (P_d * alpha), sigma)
 
         # loop throught the candidates
         for k, v in self.candidates.items():
@@ -196,7 +189,6 @@ class SingleRank(LoadFile):
         self.graph = nx.Graph()
         """ The word graph. """
 
-
     def candidate_selection(self, pos=None, stoplist=None):
         """ The candidate selection as described in the SingleRank paper.
 
@@ -221,10 +213,9 @@ class SingleRank(LoadFile):
 
         # filter candidates containing stopwords or punctuation marks
         self.candidate_filtering(stoplist=list(string.punctuation) +
-                                 ['-lrb-', '-rrb-', '-lcb-', '-rcb-', '-lsb-',
-                                  '-rsb-'] +
-                                  stoplist)
-
+                                          ['-lrb-', '-rrb-', '-lcb-', '-rcb-', '-lsb-',
+                                           '-rsb-'] +
+                                          stoplist)
 
     def build_word_graph(self, window=10, pos=None):
         """ Build the word graph from the document.
@@ -252,14 +243,13 @@ class SingleRank(LoadFile):
 
         # loop through sequence to build the edges in the graph
         for j, node_1 in enumerate(sequence):
-            for k in range(j+1, min(j+window, len(sequence))):
+            for k in range(j + 1, min(j + window, len(sequence))):
                 node_2 = sequence[k]
                 if node_1[1] in pos and node_2[1] in pos \
-                   and node_1[0] != node_2[0]:
+                        and node_1[0] != node_2[0]:
                     if not self.graph.has_edge(node_1[0], node_2[0]):
                         self.graph.add_edge(node_1[0], node_2[0], weight=0)
                     self.graph[node_1[0]][node_2[0]]['weight'] += 1.0
-
 
     def candidate_weighting(self, window=10, pos=None, normalized=False):
         """ Candidate weight calculation using random walk.
@@ -315,7 +305,6 @@ class TopicRank(LoadFile):
         self.topics = []
         """ The topic container. """
 
-
     def candidate_selection(self, pos=None, stoplist=None):
         """ The candidate selection as described in the SingleRank paper.
 
@@ -340,10 +329,9 @@ class TopicRank(LoadFile):
 
         # filter candidates containing stopwords or punctuation marks
         self.candidate_filtering(stoplist=list(string.punctuation) +
-                                 ['-lrb-', '-rrb-', '-lcb-', '-rcb-', '-lsb-',
-                                  '-rsb-'] +
-                                  stoplist)
-
+                                          ['-lrb-', '-rrb-', '-lcb-', '-rcb-', '-lsb-',
+                                           '-rsb-'] +
+                                          stoplist)
 
     def vectorize_candidates(self):
         """ Vectorize the keyphrase candidates.
@@ -369,7 +357,6 @@ class TopicRank(LoadFile):
 
         return C, X
 
-
     def topic_clustering(self, threshold=0.74, method='average'):
         """ Clustering candidates into topics.
 
@@ -393,10 +380,9 @@ class TopicRank(LoadFile):
         clusters = fcluster(Z, t=threshold, criterion='distance')
 
         # for each cluster id
-        for cluster_id in range(1, max(clusters)+1):
+        for cluster_id in range(1, max(clusters) + 1):
             self.topics.append([candidates[j] for j in range(len(clusters))
                                 if clusters[j] == cluster_id])
-
 
     def build_topic_graph(self):
         """ Build the topic graph. """
@@ -413,11 +399,10 @@ class TopicRank(LoadFile):
                         for p_j in self.candidates[c_j].offsets:
                             gap = abs(p_i - p_j)
                             if p_i < p_j:
-                                gap -= len(self.candidates[c_i].lexical_form)-1
+                                gap -= len(self.candidates[c_i].lexical_form) - 1
                             if p_j < p_i:
-                                gap -= len(self.candidates[c_j].lexical_form)-1
+                                gap -= len(self.candidates[c_j].lexical_form) - 1
                             self.graph[i][j]['weight'] += 1.0 / gap
-
 
     def candidate_weighting(self, threshold=0.74, method='average',
                             heuristic=None):
@@ -465,4 +450,3 @@ class TopicRank(LoadFile):
             else:
                 first = offsets.index(min(offsets))
                 self.weights[topic[first]] = w[i]
-

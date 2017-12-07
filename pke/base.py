@@ -2,20 +2,21 @@
 
 """ Base classes for the pke module. """
 
-from .readers import MinimalCoreNLPParser, PreProcessedTextReader, RawTextReader
-from collections import defaultdict
-from nltk.stem.snowball import SnowballStemmer as Stemmer
-from nltk import RegexpParser
-from string import letters, digits, punctuation
 import os
+from collections import defaultdict
+from string import letters, digits, punctuation
 
+from nltk import RegexpParser
+from nltk.stem.snowball import SnowballStemmer as Stemmer
 from unidecode import unidecode
+
+from .readers import MinimalCoreNLPParser, PreProcessedTextReader, RawTextReader
+
 
 class Sentence(object):
     """ The sentence data structure. """
 
     def __init__(self, words):
-
         self.words = words
         """ tokens as a list. """
 
@@ -36,7 +37,6 @@ class Candidate(object):
     """ The keyphrase candidate data structure. """
 
     def __init__(self):
-
         self.surface_forms = []
         """ the surface forms of the candidate. """
 
@@ -81,11 +81,10 @@ class LoadFile(object):
         """ The weight container (can be either word or candidate weights). """
 
         self._models = os.path.join(os.path.dirname(__file__), 'models')
-        """ Root path of the pke module. """ 
+        """ Root path of the pke module. """
 
         self._df_counts = os.path.join(self._models, "df-semeval2010.tsv.gz")
         """ Document frequency counts provided in pke. """
-
 
     def read_document(self,
                       format='raw',
@@ -110,7 +109,6 @@ class LoadFile(object):
             self.read_preprocessed_document(stemmer=stemmer, sep=sep)
         elif format == 'corenlp':
             self.read_corenlp_document(use_lemmas=use_lemmas, stemmer=stemmer)
-
 
     def read_corenlp_document(self, use_lemmas=False, stemmer='porter'):
         """ Read the input file in CoreNLP XML format and populate the sentence
@@ -160,7 +158,6 @@ class LoadFile(object):
                 if k not in set(['POS', 'lemmas', 'words']):
                     self.sentences[i].meta[k] = infos
 
-
     def read_preprocessed_document(self, stemmer='porter', sep='/'):
         """ Read the preprocessed input file and populate the sentence list.
 
@@ -196,7 +193,6 @@ class LoadFile(object):
             for j, stem in enumerate(self.sentences[i].stems):
                 self.sentences[i].stems[j] = stem.lower()
 
-
     def read_raw_document(self, stemmer='porter'):
         """ Read the raw input file and populate the sentence list.
 
@@ -231,7 +227,6 @@ class LoadFile(object):
             for j, stem in enumerate(self.sentences[i].stems):
                 self.sentences[i].stems[j] = stem.lower()
 
-
     def is_redundant(self, candidate, prev, mininum_length=1):
         """ Test if one candidate is redundant with respect to a list of already
             selected candidates. A candidate is considered redundant if it is
@@ -256,12 +251,11 @@ class LoadFile(object):
         prev = [self.candidates[u].lexical_form for u in prev]
 
         # loop through the already selected candidates
-        for prev_candidate in  prev:
-            for i in range(len(prev_candidate)-len(candidate)+1):
-                if candidate == prev_candidate[i:i+len(candidate)]:
+        for prev_candidate in prev:
+            for i in range(len(prev_candidate) - len(candidate) + 1):
+                if candidate == prev_candidate[i:i + len(candidate)]:
                     return True
         return False
-
 
     def get_n_best(self, n=10, redundancy_removal=False, stemming=True):
         """ Returns the n-best candidates given the weights.
@@ -312,7 +306,6 @@ class LoadFile(object):
         # return the list of best candidates
         return n_best
 
-
     def add_candidate(self, words, stems, pos, offset, sentence_id):
         """ Add a keyphrase candidate to the candidates container.
 
@@ -342,7 +335,6 @@ class LoadFile(object):
         # add/update the sentence ids
         self.candidates[lexical_form].sentence_ids.append(sentence_id)
 
-
     def ngram_selection(self, n=3):
         """ Select all the n-grams and populate the candidate container.
 
@@ -361,15 +353,13 @@ class LoadFile(object):
 
             # generate the ngrams
             for j in range(sentence.length):
-                for k in range(j+1, min(j+1+skip, sentence.length+1)):
-
+                for k in range(j + 1, min(j + 1 + skip, sentence.length + 1)):
                     # add the ngram to the candidate container
                     self.add_candidate(words=sentence.words[j:k],
                                        stems=sentence.stems[j:k],
                                        pos=sentence.pos[j:k],
-                                       offset=shift+j,
+                                       offset=shift + j,
                                        sentence_id=i)
-
 
     def longest_pos_sequence_selection(self, valid_pos=None):
         """ Select the longest sequences of given POS tags as candidates.
@@ -405,15 +395,14 @@ class LoadFile(object):
                         bias = 1
 
                     # add the ngram to the candidate container
-                    self.add_candidate(words=sentence.words[seq[0]:seq[-1]+1],
-                                       stems=sentence.stems[seq[0]:seq[-1]+1],
-                                       pos=sentence.pos[seq[0]:seq[-1]+1],
-                                       offset=shift+j-len(seq)+bias,
+                    self.add_candidate(words=sentence.words[seq[0]:seq[-1] + 1],
+                                       stems=sentence.stems[seq[0]:seq[-1] + 1],
+                                       pos=sentence.pos[seq[0]:seq[-1] + 1],
+                                       offset=shift + j - len(seq) + bias,
                                        sentence_id=i)
 
                 # flush sequence container
                 seq = []
-
 
     def grammar_selection(self, grammar=None):
         """ Select candidates using nltk RegexpParser with a grammar defining
@@ -459,12 +448,11 @@ class LoadFile(object):
                     last = int(leaves[-1][0])
 
                     # add the NP to the candidate container
-                    self.add_candidate(words=sentence.words[first:last+1],
-                                       stems=sentence.stems[first:last+1],
-                                       pos=sentence.pos[first:last+1],
-                                       offset=shift+first,
+                    self.add_candidate(words=sentence.words[first:last + 1],
+                                       stems=sentence.stems[first:last + 1],
+                                       pos=sentence.pos[first:last + 1],
+                                       offset=shift + first,
                                        sentence_id=i)
-
 
     def candidate_filtering(self,
                             stoplist=None,
@@ -529,6 +517,6 @@ class LoadFile(object):
             # discard if not containing only latin alpha-numeric characters
             if only_alphanum and k in self.candidates:
                 printable = set(letters + digits + valid_punctuation_marks)
-                characters = unidecode(unicode(''.join(words))).encode("ascii")  
+                characters = unidecode(unicode(''.join(words))).encode("ascii")
                 if not set(characters).issubset(printable):
                     del self.candidates[k]
